@@ -73,6 +73,14 @@ class ProfilesController {
 
     async createProfile(req, res) {
 
+        let user = req.user;
+        if (!user.is_server){
+            return res.status(400).json({
+                success: false,
+                error: 'Ошибка доступа'
+            });
+        }
+
         try {
             const {user_id, nickname} = req.body;
 
@@ -108,6 +116,23 @@ class ProfilesController {
 
         try {
             const {nickname, description, birth_date} = req.body;
+
+            if (!nickname || nickname.length > 40) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Название профиля должно быть не пустым и не длиннее 25 символов!',
+                    error_field: "nickname"
+                });
+            }
+
+            if (description && description.length > 1000) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Описание слишком длинное!',
+                    error_field: "description"
+                });
+            }
+
             const result = await ProfilesModel.updateUserProfile(user.user_id, {nickname, description, birthDate: birth_date});
 
 

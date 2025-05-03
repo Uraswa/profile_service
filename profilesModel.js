@@ -63,10 +63,12 @@ class ProfilesModel extends Model {
 
                 result = await client.query(
                     `UPDATE user_profiles
-                 SET description = $1,
+                 SET 
+                     nickname = $4,
+                     description = $1,
                      birth_date  = $2
                  WHERE user_id = $3 RETURNING *`,
-                    [description, birthDate, userId]
+                    [description, birthDate, userId, nickname]
                 );
             } else {
 

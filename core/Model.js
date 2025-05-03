@@ -13,7 +13,7 @@ class Model {
         Model.globalPool = new Pool({
             user: 'nice',
             host: 'localhost',
-            database: 'users',
+            database: 'profiles',
             password: 'nice',
             port: 5432,
         })
