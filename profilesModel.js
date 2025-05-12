@@ -1,6 +1,58 @@
-﻿import Model from "./core/Model.js";
+﻿import pg from 'pg'
 
-class ProfilesModel extends Model {
+
+const {Pool} = pg;
+
+// Конфигурация соединений
+const dbConfig = {
+    master: {
+        user: 'postgres',
+        host: 'localhost', // или IP мастера
+        database: 'postgres',
+        password: 'nice',
+        port: 6600,
+    },
+    slaves: [
+        {
+            user: 'postgres',
+            host: 'localhost', // или IP первого slave
+            database: 'postgres',
+            password: 'nice',
+            port: 6601,
+        },
+        {
+            user: 'postgres',
+            host: 'localhost', // или IP второго slave
+            database: 'postgres',
+            password: 'nice',
+            port: 6602,
+        }
+    ]
+};
+
+
+const masterPool = new Pool(dbConfig.master);
+const slavePools = dbConfig.slaves.map(config => new Pool(config));
+
+
+let currentSlaveIndex = 0;
+
+function getSlavePool() {
+    const pool = slavePools[currentSlaveIndex];
+    currentSlaveIndex = (currentSlaveIndex + 1) % slavePools.length;
+    return pool;
+}
+
+
+async function db_query(sql, values = [], isWriteQuery = false) {
+    const pool = isWriteQuery ? masterPool : getSlavePool();
+
+    return await pool.query(sql, values);
+
+}
+
+
+class ProfilesModel {
     async getUserProfile(userId) {
         const query = `
         SELECT user_id,
@@ -9,7 +61,7 @@ class ProfilesModel extends Model {
                birth_date
         FROM user_profiles
         WHERE user_id = $1`;
-        const result = await this.pool.query(query, [userId]);
+        const result = await db_query(query, [userId]);
         return result.rows[0];
     }
 
@@ -23,7 +75,7 @@ class ProfilesModel extends Model {
                    FROM user_profiles
                    WHERE user_id IN (${ids})`;
 
-        const result = await this.pool.query(query);
+        const result = await db_query(query);
         return result.rows;
     }
 
@@ -31,22 +83,22 @@ class ProfilesModel extends Model {
         const query = `SELECT user_id, nickname
                    FROM user_profiles
                    WHERE nickname ILIKE $1`;
-        const result = await this.pool.query(query, ['%' + profileName + '%']);
+        const result = await db_query(query, ['%' + profileName + '%']);
         return result.rows;
     }
 
     async createUserProfile(userId, nickname) {
-        let result = await this.pool.query(
+        let result = await db_query(
             `INSERT INTO user_profiles (user_id, nickname)
          VALUES ($1, $2) RETURNING *`,
-            [userId, nickname]
+            [userId, nickname], true
         );
         return result;
     }
 
 
     async updateUserProfile(userId, {nickname, description, birthDate}) {
-        const client = await this.pool.connect();
+        const client = await masterPool.connect();
         try {
             await client.query('BEGIN');
 
@@ -68,7 +120,7 @@ class ProfilesModel extends Model {
                      description = $1,
                      birth_date  = $2
                  WHERE user_id = $3 RETURNING *`,
-                    [description, birthDate, userId, nickname]
+                    [description, birthDate ? birthDate : null, userId, nickname]
                 );
             } else {
 

@@ -5,11 +5,8 @@ dotenv.config();
 import express from 'express'
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import Model from "./core/Model.js";
 import ProfilesController from "./profilesController.js";
 import authMiddleware from "./middleware/auth-middleware.js";
-
-Model.connect();
 
 const app = express()
 app.use(express.json())
