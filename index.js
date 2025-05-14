@@ -20,15 +20,13 @@ app.use(authMiddleware)
 
 const router = express.Router()
 app.use(router);
+app.disable('etag');
 
 router.get('/api/getUserProfilesByIds', ProfilesController.getUserProfilesByIds.bind(ProfilesController));
 router.get('/api/getProfiles', ProfilesController.getProfiles.bind(ProfilesController));
 router.get('/api/getProfile', ProfilesController.getProfile.bind(ProfilesController));
 router.post('/api/createProfile', ProfilesController.createProfile.bind(ProfilesController));
 router.post('/api/updateProfile', ProfilesController.updateProfile.bind(ProfilesController));
-
-//TODO delete profile. Потому что теперь отсутствуют foreign ключи с cascade!!!
-
 app.listen(8001, () => {
     console.log("Profile service is running...")
 })

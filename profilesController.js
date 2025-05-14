@@ -92,6 +92,14 @@ class ProfilesController {
                 });
             }
 
+            if (!(/^(\w| |[А-Яа-я])+$/g.test(nickname)) || /([ _]{2,}| _|_ )/g.test(nickname)){
+                return res.status(400).json({
+                    success: false,
+                    error: 'Некорректный набор символов в никнейме',
+                    error_field: "nickname"
+                });
+            }
+
             let profile = await ProfilesModel.createUserProfile(user_id, nickname);
             if (!profile) {
                 return res.status(200).json({
@@ -121,6 +129,14 @@ class ProfilesController {
                 return res.status(400).json({
                     success: false,
                     error: 'Название профиля должно быть не пустым и не длиннее 25 символов!',
+                    error_field: "nickname"
+                });
+            }
+
+            if (!(/^(\w| |[А-Яа-я])+$/g.test(nickname)) || /([ _]{2,}| _|_ )/g.test(nickname)){
+                return res.status(400).json({
+                    success: false,
+                    error: 'Некорректный набор символов в никнейме',
                     error_field: "nickname"
                 });
             }
