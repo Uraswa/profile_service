@@ -57,59 +57,18 @@ class ProfilesController {
                 });
             }
 
-            const profile = await ProfilesModel.getUserProfile(user_id);
+            let profile = await ProfilesModel.getUserProfile(user_id);
+            if (!profile) {
+                profile = {
+                    nickname: "",
+                    description: "",
+                    birthday: ""
+                }
+            }
 
             res.status(200).json({
                 success: true,
                 data: profile
-            });
-        } catch (error) {
-            res.status(500).json({
-                success: false,
-                error: "Unknown error"
-            });
-        }
-    }
-
-    async createProfile(req, res) {
-
-        let user = req.user;
-        if (!user.is_server){
-            return res.status(400).json({
-                success: false,
-                error: 'Ошибка доступа'
-            });
-        }
-
-        try {
-            const {user_id, nickname} = req.body;
-
-            if (!nickname || nickname.length > 40) {
-                return res.status(400).json({
-                    success: false,
-                    error: 'Название профиля должно быть не пустым и не длиннее 25 символов!',
-                    error_field: "nickname"
-                });
-            }
-
-            if (!(/^(\w| |[А-Яа-я])+$/g.test(nickname)) || /([ _]{2,}| _|_ )/g.test(nickname)){
-                return res.status(400).json({
-                    success: false,
-                    error: 'Некорректный набор символов в никнейме',
-                    error_field: "nickname"
-                });
-            }
-
-            let profile = await ProfilesModel.createUserProfile(user_id, nickname);
-            if (!profile) {
-                return res.status(200).json({
-                    success: false,
-                    error: 'Unknown_error'
-                });
-            }
-
-            res.status(200).json({
-                success: true
             });
         } catch (error) {
             res.status(500).json({
@@ -149,7 +108,7 @@ class ProfilesController {
                 });
             }
 
-            const result = await ProfilesModel.updateUserProfile(user.user_id, {nickname, description, birthDate: birth_date});
+            const result = await ProfilesModel.updateOrCreateUserProfile(user.user_id, {nickname, description, birthDate: birth_date});
 
 
             res.status(200).json({
@@ -157,6 +116,7 @@ class ProfilesController {
                 data: result
             });
         } catch (error) {
+            console.log(error);
             res.status(500).json({
                 success: false,
                 error: "Unknown error"

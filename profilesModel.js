@@ -87,17 +87,7 @@ class ProfilesModel {
         return result.rows;
     }
 
-    async createUserProfile(userId, nickname) {
-        let result = await db_query(
-            `INSERT INTO user_profiles (user_id, nickname)
-         VALUES ($1, $2) RETURNING *`,
-            [userId, nickname], true
-        );
-        return result;
-    }
-
-
-    async updateUserProfile(userId, {nickname, description, birthDate}) {
+    async updateOrCreateUserProfile(userId, {nickname, description, birthDate}) {
         const client = await masterPool.connect();
         try {
             await client.query('BEGIN');
@@ -127,7 +117,7 @@ class ProfilesModel {
                 result = await client.query(
                     `INSERT INTO user_profiles (user_id, nickname, description, birth_date)
                  VALUES ($1, $4, $2, $3) RETURNING *`,
-                    [userId, description, birthDate, nickname]
+                    [userId, description, birthDate ? birthDate : null, nickname]
                 );
             }
 
