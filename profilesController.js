@@ -2,6 +2,13 @@
 
 class ProfilesController {
     async getUserProfilesByIds(req, res) {
+        if (!req.user.is_server) {
+            res.status(304).json({
+                success: false,
+                error: "Permission_denied"
+            });
+        }
+
         let ids = req.query.ids;
         if (!ids) {
             res.status(500).json({
@@ -32,7 +39,7 @@ class ProfilesController {
                 });
             }
 
-            let profiles = await ProfilesModel.getUserProfiles(profileName);
+            let profiles = await ProfilesModel.getUserProfiles(profileName, req.user.company_id);
             return res.status(200).json({
                 success: true,
                 data: profiles
@@ -57,7 +64,7 @@ class ProfilesController {
                 });
             }
 
-            let profile = await ProfilesModel.getUserProfile(user_id);
+            let profile = await ProfilesModel.getUserProfile(user_id, req.user.company_id);
             if (!profile) {
                 profile = {
                     nickname: "",
@@ -82,7 +89,7 @@ class ProfilesController {
         const user = req.user;
 
         try {
-            const {nickname, description, birth_date} = req.body;
+            const {nickname, description, birth_date, user_id, company_id} = req.body;
 
             if (!nickname || nickname.length > 40) {
                 return res.status(400).json({
@@ -108,7 +115,12 @@ class ProfilesController {
                 });
             }
 
-            const result = await ProfilesModel.updateOrCreateUserProfile(user.user_id, {nickname, description, birthDate: birth_date});
+            if (user.is_server) {
+                user.user_id = user_id;
+                user.company_id = company_id;
+            }
+
+            const result = await ProfilesModel.updateOrCreateUserProfile(user.user_id, user.company_id, {nickname, description, birthDate: birth_date});
 
 
             res.status(200).json({

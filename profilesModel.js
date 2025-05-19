@@ -53,15 +53,15 @@ async function db_query(sql, values = [], isWriteQuery = false) {
 
 
 class ProfilesModel {
-    async getUserProfile(userId) {
+    async getUserProfile(userId, company_id) {
         const query = `
         SELECT user_id,
                nickname,
                description,
                birth_date
         FROM user_profiles
-        WHERE user_id = $1`;
-        const result = await db_query(query, [userId]);
+        WHERE user_id = $1 and company_id = $2`;
+        const result = await db_query(query, [userId, company_id]);
         return result.rows[0];
     }
 
@@ -79,21 +79,21 @@ class ProfilesModel {
         return result.rows;
     }
 
-    async getUserProfiles(profileName) {
+    async getUserProfiles(profileName, company_id) {
         const query = `SELECT user_id, nickname
                    FROM user_profiles
-                   WHERE nickname ILIKE $1`;
-        const result = await db_query(query, ['%' + profileName + '%']);
+                   WHERE nickname ILIKE $1 and company_id = $2`;
+        const result = await db_query(query, ['%' + profileName + '%', company_id]);
         return result.rows;
     }
 
-    async updateOrCreateUserProfile(userId, {nickname, description, birthDate}) {
+    async updateOrCreateUserProfile(userId, company_id, {nickname, description, birthDate}) {
         const client = await masterPool.connect();
         try {
             await client.query('BEGIN');
 
             const existsResult = await client.query(
-                `SELECT 1
+                `SELECT company_id
              FROM user_profiles
              WHERE user_id = $1`,
                 [userId]
@@ -101,6 +101,11 @@ class ProfilesModel {
 
             let result;
             if (existsResult.rows.length > 0) {
+
+                if (existsResult.rows[0].company_id != company_id) {
+                    throw new Error("Company id mismatch");
+                    return;
+                }
 
 
                 result = await client.query(
@@ -115,9 +120,9 @@ class ProfilesModel {
             } else {
 
                 result = await client.query(
-                    `INSERT INTO user_profiles (user_id, nickname, description, birth_date)
-                 VALUES ($1, $4, $2, $3) RETURNING *`,
-                    [userId, description, birthDate ? birthDate : null, nickname]
+                    `INSERT INTO user_profiles (user_id, nickname, description, birth_date, company_id)
+                 VALUES ($1, $4, $2, $3, $5) RETURNING *`,
+                    [userId, description, birthDate ? birthDate : null, nickname, company_id]
                 );
             }
 
