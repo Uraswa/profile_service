@@ -54,14 +54,20 @@ async function db_query(sql, values = [], isWriteQuery = false) {
 
 class ProfilesModel {
     async getUserProfile(userId, company_id) {
-        const query = `
+        let query = `
         SELECT user_id,
                nickname,
                description,
                birth_date
         FROM user_profiles
-        WHERE user_id = $1 and company_id = $2`;
-        const result = await db_query(query, [userId, company_id]);
+        WHERE user_id = $1`;
+
+        let vars = [userId]
+        if (company_id) {
+            query += ` and company_id = $2`
+            vars.push(company_id)
+        }
+        const result = await db_query(query, vars);
         return result.rows[0];
     }
 

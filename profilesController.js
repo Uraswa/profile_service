@@ -39,6 +39,10 @@ class ProfilesController {
                 });
             }
 
+            if (req.user.is_server) {
+                req.user.company_id = req.query.company_id
+            }
+
             let profiles = await ProfilesModel.getUserProfiles(profileName, req.user.company_id);
             return res.status(200).json({
                 success: true,
@@ -62,6 +66,10 @@ class ProfilesController {
                     success: false,
                     error: 'Id пользователя обязателен'
                 });
+            }
+
+            if (req.user.is_server) {
+                req.user.company_id = req.query.company_id
             }
 
             let profile = await ProfilesModel.getUserProfile(user_id, req.user.company_id);
